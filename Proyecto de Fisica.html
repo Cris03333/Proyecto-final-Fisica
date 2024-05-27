@@ -1,0 +1,147 @@
+ <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiro Parabólico</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #canvasContainer {
+            position: relative;
+            margin-top: 20px;
+        }
+        canvas {
+            border: 1px solid #000;
+            background-color: #fff;
+        }
+        #info {
+            margin-top: 20px;
+        }
+        form {
+            margin-top: 20px;
+        }
+        label, input {
+            margin-right: 10px;
+        }
+        .procedure {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 15px;
+            border: 1px solid #ccc;
+            width: 80%;
+        }
+    </style>
+</head>
+<body>
+    <form id="inputForm">
+        <label for="v0">Velocidad inicial (m/s):</label>
+        <input type="number" id="v0" name="v0" required>
+        <label for="angle">Ángulo de lanzamiento (grados):</label>
+        <input type="number" id="angle" name="angle" required>
+        <button type="submit">Iniciar</button>
+    </form>
+    
+    <div id="canvasContainer">
+        <canvas id="canvas" width="800" height="400"></canvas>
+        <div id="info"></div>
+    </div>
+    <div class="procedure" id="procedure"></div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const info = document.getElementById('info');
+        const inputForm = document.getElementById('inputForm');
+        const procedure = document.getElementById('procedure');
+        
+        let g = 9.81; // Aceleración gravitacional (m/s^2)
+        let v0, angle, v0x, v0y;
+        let t, dt, x, y, animationFrame;
+
+        inputForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            v0 = parseFloat(document.getElementById('v0').value);
+            angle = parseFloat(document.getElementById('angle').value);
+            v0x = v0 * Math.cos(angle * Math.PI / 180); // Componente x de la velocidad inicial
+            v0y = v0 * Math.sin(angle * Math.PI / 180); // Componente y de la velocidad inicial
+            t = 0; // Tiempo inicial
+            dt = 0.1; // Incremento de tiempo
+            x = 0; // Posición inicial en x
+            y = 0; // Posición inicial en y
+
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame); // Detener cualquier animación en curso
+            }
+
+            procedure.innerHTML = ''; // Clear previous procedure
+            animate();
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            t += dt;
+            x = v0x * t;
+            y = (v0y * t) - (0.5 * g * t * t);
+
+            if (y >= 0) {
+                drawProjectile(x, y);
+                displayInfo(t, x, y, v0x, v0y);
+                animationFrame = requestAnimationFrame(animate);
+            } else {
+                displayInfo(t, x, 0, v0x, v0y);
+                displayProcedure(v0, angle, x, v0y);
+            }
+        }
+
+        function drawProjectile(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, canvas.height - y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+        }
+
+        function displayInfo(t, x, y, v0x, v0y) {
+            info.innerHTML = `
+                <strong>Tiempo (s):</strong> ${t.toFixed(2)}<br>
+                <strong>Posición X (m):</strong> ${x.toFixed(2)}<br>
+                <strong>Posición Y (m):</strong> ${y.toFixed(2)}<br>
+                <strong>Velocidad Inicial X (m/s):</strong> ${v0x.toFixed(2)}<br>
+                <strong>Velocidad Inicial Y (m/s):</strong> ${v0y.toFixed(2)}<br>
+            `;
+        }
+
+        function displayProcedure(v0, angle, distance, maxHeight) {
+            const radianAngle = angle * Math.PI / 180.0;
+            const totalTime = (2 * v0 * Math.sin(radianAngle)) / g;
+            const maxAltitude = (v0 * Math.sin(radianAngle)) ** 2 / (2 * g);
+
+            procedure.innerHTML = `
+                <h3>Procedimiento</h3>
+                <p><strong>Fórmulas Utilizadas:</strong></p>
+                <ul>
+                    <li>Posición en X: \( x = v_0 \cdot \cos(\\theta) \cdot t \)</li>
+                    <li>Posición en Y: \( y = v_0 \cdot \sin(\\theta) \cdot t - 0.5 \cdot g \cdot t^2 \)</li>
+                    <li>Tiempo Total de Vuelo: \( t_{total} = \frac{2 \cdot v_0 \cdot \sin(\\theta)}{g} \)</li>
+                    <li>Alcance Máximo: \( D = \frac{v_0^2 \cdot \sin(2\\theta)}{g} \)</li>
+                    <li>Altura Máxima: \( H = \frac{(v_0 \cdot \sin(\\theta))^2}{2 \cdot g} \)</li>
+                </ul>
+                <p><strong>Valores Calculados:</strong></p>
+                <ul>
+                    <li>Velocidad inicial (v<sub>0</sub>): ${v0} m/s</li>
+                    <li>Ángulo de lanzamiento (θ): ${angle} grados</li>
+                    <li>Tiempo total de vuelo: ${totalTime.toFixed(2)} segundos</li>
+                    <li>Distancia total (D): ${distance.toFixed(2)} metros</li>
+                    <li>Altura máxima (H): ${maxAltitude.toFixed(2)} metros</li>
+                </ul>
+            `;
+        }
+    </script>
+</body>
+</html>
